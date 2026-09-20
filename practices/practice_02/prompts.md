@@ -9,7 +9,7 @@
 | Техника | Файл эксперимента | Изменённый файл Практики 1 | Конкретное изменение | Проверка | Что отклонили |
 |---|---|---|---|---|---|
 | Few-shot | [`few_shot/experiment.md`](few_shot/experiment.md) | `practices/practice_01/problem.md` | Уточнён раздел «## Проблема»: оставлены факты из TRAINING_PR.diff, удалены непроверяемые утверждения | Статическая проверка по TRAINING_PR.diff:35–37 и 19–22 | Утверждения про 500, неверный тип тела, задержки, безопасность и роль пользователя без источника |
-| R.C.T.F. | [`rctf/experiment.md`](rctf/experiment.md) |  |  |  |  |
+| R.C.T.F. | [`rctf/experiment.md`](rctf/experiment.md) | `practices/practice_01/problem.md` | Переработан раздел «## Метрики»: разделены AS IS, способ измерения и target; убраны недоказуемые runtime-утверждения | Проверка: наличие новой таблицы и ссылок на TRAINING_PR.diff; отсутствие конкретных порогов до согласования | Конкретные пороги SLA и коды статусов без подтверждения |
 | Chain of Verification | [`chain_of_verification/experiment.md`](chain_of_verification/experiment.md) |  |  |  |  |
 | Tree of Thoughts | [`tree_of_thoughts/experiment.md`](tree_of_thoughts/experiment.md) |  |  |  |  |
 | RAG | [`rag/experiment.md`](rag/experiment.md) |  |  |  |  |
