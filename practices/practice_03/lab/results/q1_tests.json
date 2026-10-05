@@ -1,0 +1,44 @@
+{
+  "request": {
+    "model": "qwen3.5:4b",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Ты помощник по учебному проекту. Используй только переданный контекст.\nНе выдумывай CI, зависимости, функции или настройки.\nЕсли данных нет, напиши «В предоставленных материалах нет ответа».\nФормат: короткий ответ, затем основание из контекста.\n\n"
+      },
+      {
+        "role": "user",
+        "content": "FILE: demo/README.md\n---\n# Notify Mini\nУчебный сервис подписки. Подписчики хранятся в памяти процесса.\nВ service.py функция subscribe добавляет непустое имя в множество.\nПовторное добавление имени не создаёт дубликат.\n\nПроверка: make test.\nЗависимости: стандартная библиотека Python 3.10+.\n\n\n\nFILE: demo/Makefile\n---\n.PHONY: test\ntest:\n\tpython3 -m unittest -v\n\n\n\nFILE: demo/service.py\n---\nsubscribers = set()\n\n\ndef subscribe(name):\n    if not name.strip():\n        raise ValueError(\"empty name\")\n    subscribers.add(name.strip())\n    return {\"subscribed\": True}\n\n\n\nFILE: demo/test_service.py\n---\nimport unittest\nfrom service import subscribe, subscribers\n\n\nclass SubscribeTest(unittest.TestCase):\n    def setUp(self):\n        subscribers.clear()\n\n    def test_subscribe(self):\n        self.assertEqual(subscribe(\"Ann\"), {\"subscribed\": True})\n        self.assertEqual(subscribers, {\"Ann\"})\n\n    def test_empty(self):\n        with self.assertRaises(ValueError):\n            subscribe(\" \")\n\n    def test_duplicate(self):\n        subscribe(\"Ann\")\n        subscribe(\"Ann\")\n        self.assertEqual(len(subscribers), 1)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n\n\n\nКак запустить тесты? Укажи файл-источник."
+      }
+    ],
+    "stream": false,
+    "think": false,
+    "options": {
+      "temperature": 0.2,
+      "seed": 42,
+      "num_ctx": 4096,
+      "num_predict": 512
+    }
+  },
+  "response": {
+    "model": "qwen3.5:4b",
+    "created_at": "2026-10-05T19:27:43.642784134Z",
+    "message": {
+      "role": "assistant",
+      "content": "Запустите тесты командой `make test` в корне проекта или файлом `Makefile`.\n\n**Основание:** В документе `demo/Makefile` определена цель `test`, которая вызывает команду `python3 -m unittest -v`. Файл-источник для запуска — `Makefile`."
+    },
+    "done": true,
+    "done_reason": "stop",
+    "total_duration": 18507618053,
+    "load_duration": 11623727151,
+    "prompt_eval_count": 390,
+    "prompt_eval_cached_count": 0,
+    "prompt_eval_duration": 898828000,
+    "eval_count": 67,
+    "eval_duration": 5977953000
+  },
+  "wall_seconds": 18.541657563000626,
+  "load_seconds": 11.623727151,
+  "total_seconds": 18.507618053,
+  "decode_tokens_per_second": 11.207849911165242
+}
