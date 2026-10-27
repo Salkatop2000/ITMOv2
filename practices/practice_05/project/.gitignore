@@ -53,3 +53,6 @@ dmypy.json
 
 # Local data files generated during tests/checks
 tmp/
+
+# data
+data/
