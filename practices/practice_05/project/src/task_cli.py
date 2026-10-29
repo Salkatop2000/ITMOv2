@@ -104,6 +104,24 @@ def mark_done(path: str, task_id: int) -> str:
     raise KeyError(task_id)
 
 
+def reopen_task(path: str, task_id: int) -> str:
+    """Reopen a task by setting its status back to open.
+
+    Returns a status string:
+    - "updated": changed from done to open
+    - "already": task existed and was already open
+    - raises KeyError if not found
+    """
+    tasks = load_tasks(path)
+    for t in tasks:
+        if t.get("id") == task_id:
+            if t.get("status") == "open":
+                return "already"
+            t["status"] = "open"
+            save_tasks(path, tasks)
+            return "updated"
+    raise KeyError(task_id)
+
 def clear_tasks(path: str, status: str) -> int:
     """Clear tasks by status. Returns number of removed tasks.
 
@@ -151,6 +169,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_done = subparsers.add_parser("done", help="Mark a task as done")
     p_done.add_argument("id", type=int, help="Task id")
 
+    # reopen command
+    p_reopen = subparsers.add_parser("reopen", help="Reopen a completed task")
+    p_reopen.add_argument("id", type=int, help="Task id")
+
     # clear command
     p_clear = subparsers.add_parser("clear", help="Clear tasks by status")
     p_clear.add_argument(
@@ -194,6 +216,18 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"Task {args.id} is already done")
             return 0
         print(f"Task {args.id} marked as done")
+        return 0
+
+    if args.command == "reopen":
+        try:
+            result = reopen_task(data_file, args.id)
+        except KeyError:
+            print(f"Task {args.id} not found", file=sys.stderr)
+            return 1
+        if result == "already":
+            print(f"Task {args.id} is already open")
+            return 0
+        print(f"Task {args.id} marked as open")
         return 0
 
     if args.command == "clear":

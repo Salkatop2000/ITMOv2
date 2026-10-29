@@ -107,3 +107,61 @@ def test_clear_done_and_all(tmp_path):
     assert r_clear_all.returncode == 0
     tasks = read_tasks(data)
     assert tasks == []
+
+
+def test_reopen_done_to_open(tmp_path):
+    data = tmp_path / "tasks.json"
+    run_cli(["add", "Task"], data)
+    # mark done first
+    assert run_cli(["done", "1"], data).returncode == 0
+    r = run_cli(["reopen", "1"], data)
+    assert r.returncode == 0
+    assert "marked as open" in r.stdout
+    tasks = read_tasks(data)
+    assert tasks[0]["status"] == "open"
+
+
+def test_reopen_nonexistent_task(tmp_path):
+    data = tmp_path / "tasks.json"
+    r = run_cli(["reopen", "999"], data)
+    assert r.returncode != 0
+    assert "not found" in r.stderr
+
+
+def test_reopen_already_open(tmp_path):
+    data = tmp_path / "tasks.json"
+    run_cli(["add", "Task"], data)
+    r = run_cli(["reopen", "1"], data)
+    assert r.returncode == 0
+    assert "already open" in r.stdout
+
+
+def test_list_filters_after_reopen(tmp_path):
+    data = tmp_path / "tasks.json"
+    run_cli(["add", "A"], data)
+    # mark done then reopen
+    assert run_cli(["done", "1"], data).returncode == 0
+    assert run_cli(["reopen", "1"], data).returncode == 0
+    r_open = run_cli(["list", "--status", "open"], data)
+    out_open = r_open.stdout.strip().splitlines()
+    # After reopen, the task should be listed as open
+    assert len(out_open) == 1
+    assert "open" in out_open[0]
+    r_done = run_cli(["list", "--status", "done"], data)
+    out_done = r_done.stdout.strip().splitlines()
+    # No done tasks; either empty or 'No tasks.'
+    if out_done:
+        # When there are no tasks, CLI prints 'No tasks.'
+        assert out_done == ["No tasks."]
+
+
+def test_clear_done_does_not_remove_reopened(tmp_path):
+    data = tmp_path / "tasks.json"
+    run_cli(["add", "A"], data)
+    assert run_cli(["done", "1"], data).returncode == 0
+    assert run_cli(["reopen", "1"], data).returncode == 0
+    r_clear_done = run_cli(["clear", "--status", "done"], data)
+    assert r_clear_done.returncode == 0
+    tasks = read_tasks(data)
+    assert len(tasks) == 1
+    assert tasks[0]["status"] == "open"

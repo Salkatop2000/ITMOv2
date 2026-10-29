@@ -95,11 +95,12 @@ class App:
         self.add_entry.pack(side=tk.LEFT, padx=4)
         ttk.Button(bottom, text="Add", command=self.do_add).pack(side=tk.LEFT, padx=4)
 
-        # Done
+        # Done / Reopen actions share the same id field
         ttk.Label(bottom, text="Done id:").pack(side=tk.LEFT, padx=(12, 0))
         self.id_entry = ttk.Entry(bottom, textvariable=self.id_var, width=6)
         self.id_entry.pack(side=tk.LEFT, padx=4)
         ttk.Button(bottom, text="Done", command=self.do_done).pack(side=tk.LEFT, padx=4)
+        ttk.Button(bottom, text="Reopen", command=self.do_reopen).pack(side=tk.LEFT, padx=4)
 
         # Clear by status
         ttk.Button(bottom, text="Clear by status", command=self.do_clear).pack(side=tk.RIGHT)
@@ -167,6 +168,18 @@ class App:
         res = run_cli(data_path, ["clear", "--status", status])
         if res.returncode != 0:
             messagebox.showerror("Clear error", res.stderr or "Failed to clear tasks")
+            return
+        self.refresh()
+
+    def do_reopen(self) -> None:
+        raw = (self.id_var.get() or "").strip()
+        if not raw.isdigit() or int(raw) <= 0:
+            messagebox.showerror("Validation", "Id must be a positive integer")
+            return
+        data_path = self.data_var.get().strip() or DEFAULT_DATA_FILE
+        res = run_cli(data_path, ["reopen", raw])
+        if res.returncode != 0:
+            messagebox.showerror("Reopen error", res.stderr or "Failed to reopen task")
             return
         self.refresh()
 
