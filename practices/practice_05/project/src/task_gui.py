@@ -2,7 +2,7 @@
 """
 Minimal Tkinter GUI wrapper around src/task_cli.py.
 
-- Uses subprocess to call the CLI with: list/add/done/clear
+- Uses subprocess to call the CLI with: list/add/done/clear/search
 - Data file path editable at the top; optional Save Path (persist in data/gui_path.txt)
 - Status filter: open/done/all
 
@@ -57,6 +57,10 @@ class App:
         self.filter_var = tk.StringVar(value="all")
         self.add_var = tk.StringVar()
         self.id_var = tk.StringVar()
+        self.search_var = tk.StringVar()
+        self._search_after_id = None  # debounce handle
+        self.last_query = None
+        self.last_status = None
 
         # Top: data path entry and actions
         top = ttk.Frame(master)
@@ -66,6 +70,17 @@ class App:
         self.data_entry.pack(side=tk.LEFT, padx=6)
         ttk.Button(top, text="Refresh", command=self.refresh).pack(side=tk.LEFT, padx=4)
         ttk.Button(top, text="Save Path", command=self.save_path).pack(side=tk.LEFT, padx=4)
+
+        # Search controls (UI search integration)
+        search_bar = ttk.Frame(master)
+        search_bar.pack(fill=tk.X, padx=8, pady=4)
+        ttk.Label(search_bar, text="Search:").pack(side=tk.LEFT)
+        self.search_entry = ttk.Entry(search_bar, textvariable=self.search_var, width=40)
+        self.search_entry.pack(side=tk.LEFT, padx=4)
+        self.search_entry.bind("<KeyRelease>", lambda e: self.schedule_search())
+        self.search_entry.bind("<Escape>", lambda e: self.clear_search())
+        ttk.Button(search_bar, text="Clear", command=self.clear_search).pack(side=tk.LEFT, padx=4)
+        ttk.Button(search_bar, text="Retry", command=self.retry_search).pack(side=tk.LEFT, padx=4)
 
         # Middle: listbox and filter
         mid = ttk.Frame(master)
@@ -77,6 +92,10 @@ class App:
         sb = ttk.Scrollbar(left, orient=tk.VERTICAL, command=self.listbox.yview)
         sb.pack(side=tk.RIGHT, fill=tk.Y)
         self.listbox.configure(yscrollcommand=sb.set)
+
+        # Loading / status label
+        self.status_label = ttk.Label(master, text="")
+        self.status_label.pack(fill=tk.X, padx=8)
 
         right = ttk.Frame(mid)
         right.pack(side=tk.RIGHT, fill=tk.Y)
@@ -124,6 +143,8 @@ class App:
         self.listbox.delete(0, tk.END)
         for ln in lines:
             self.listbox.insert(tk.END, ln)
+        # clear status label
+        self.status_label.configure(text="")
 
     def save_path(self) -> None:
         p = self.data_var.get().strip() or DEFAULT_DATA_FILE
@@ -182,6 +203,70 @@ class App:
             messagebox.showerror("Reopen error", res.stderr or "Failed to reopen task")
             return
         self.refresh()
+
+    # -----------------
+    # Search behaviors
+    # -----------------
+    def schedule_search(self) -> None:
+        # debounce key events via Tkinter after
+        if self._search_after_id is not None:
+            try:
+                self.master.after_cancel(self._search_after_id)
+            except Exception:
+                pass
+        self._search_after_id = self.master.after(300, self.perform_search)
+
+    def perform_search(self) -> None:
+        # Reset handle
+        self._search_after_id = None
+        query_raw = (self.search_var.get() or "")
+        trimmed = query_raw.strip()
+        # Empty query guard: restore list instead of calling search
+        if not trimmed:
+            self.status_label.configure(text="")
+            self.refresh()
+            return
+        if len(trimmed) > 256:
+            messagebox.showerror("Validation", "Search query is too long (max 256)")
+            return
+        # Show loading
+        self.status_label.configure(text="Searching…")
+        status = self.current_status()
+        data_path = self.data_var.get().strip() or DEFAULT_DATA_FILE
+        res = run_cli(data_path, ["search", "--status", status, "--query", trimmed])
+        # Store last query for Retry
+        self.last_query = trimmed
+        self.last_status = status
+        if res.returncode != 0:
+            # Error state: show message and keep last_query/last_status for retry
+            self.status_label.configure(text="Search error")
+            messagebox.showerror("Search error", res.stderr or "Failed to search tasks")
+            return
+        # Render results; empty state
+        lines = [ln for ln in res.stdout.splitlines() if ln.strip()]
+        self.listbox.delete(0, tk.END)
+        if not lines or lines == ["No tasks."]:
+            self.listbox.insert(tk.END, f"Нет задач по запросу \"{trimmed}\"")
+        else:
+            for ln in lines:
+                if ln.strip() == "No tasks.":
+                    continue
+                self.listbox.insert(tk.END, ln)
+        self.status_label.configure(text="")
+
+    def clear_search(self) -> None:
+        self.search_var.set("")
+        self.last_query = None
+        self.last_status = None
+        self.refresh()
+
+    def retry_search(self) -> None:
+        if not self.last_query:
+            messagebox.showinfo("Retry", "No previous search to retry")
+            return
+        # re-run last non-empty query
+        self.search_var.set(self.last_query)
+        self.perform_search()
 
 
 def main() -> None:

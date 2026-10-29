@@ -60,6 +60,23 @@ def save_tasks(path: str, tasks: List[Dict]) -> None:
 
 
 # ---------------------
+# Search helpers / contracts
+# ---------------------
+
+# Error messages (kept simple, stderr-friendly)
+ERR_INVALID_QUERY = "Query must be 1..256 chars after trim"
+
+def normalize_query(q: str) -> (str, bool):
+    """Trim and lowercase the query for case-insensitive contains.
+
+    Returns tuple: (normalized_query, trimmed_flag)
+    """
+    original = q or ""
+    trimmed = original.strip()
+    return trimmed.lower(), trimmed != original
+
+
+# ---------------------
 # Task operations
 # ---------------------
 def _next_id(tasks: List[Dict]) -> int:
@@ -182,6 +199,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="Which tasks to remove (default: done)",
     )
 
+    # search command
+    p_search = subparsers.add_parser("search", help="Search tasks by title (contains, case-insensitive)")
+    p_search.add_argument(
+        "--query",
+        dest="query",
+        required=True,
+        help="Search query (1..256 chars after trim)",
+    )
+    p_search.add_argument(
+        "--status",
+        choices=["open", "done", "all"],
+        default="all",
+        help="Filter by status (default: all)",
+    )
+
     return parser
 
 
@@ -233,6 +265,29 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.command == "clear":
         removed = clear_tasks(data_file, args.status)
         print(f"Removed {removed} task(s)")
+        return 0
+
+    if args.command == "search":
+        # Validation: query must be 1..256 after trim; empty query should not be sent by UI, but validate defensively
+        normalized, _ = normalize_query(args.query)
+        if len(normalized) < 1 or len(normalized) > 256:
+            print(ERR_INVALID_QUERY, file=sys.stderr)
+            return 2
+        # Load tasks and apply filters in the same way as list, preserving order (currently id ASC)
+        status = None if args.status == "all" else args.status
+        tasks = list_tasks(data_file, status)
+        # Apply case-insensitive contains on title
+        q = normalized
+        results = []
+        for t in tasks:
+            title = str(t.get("title", ""))
+            if q in title.lower():
+                results.append(t)
+        if not results:
+            print("No tasks.")
+            return 0
+        for t in results:
+            print(f"{t['id']:>3} | {t['status']:<4} | {t['title']}")
         return 0
 
     # Should not reach here
