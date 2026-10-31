@@ -18,6 +18,12 @@
         },
         "anthropic/claude-sonnet-5": {
           "name": "anthropic/claude-sonnet-5.5"
+        },
+        "z-ai/glm-5.3-flash": {
+          "name": "z-ai/glm-5.3-flash"
+        },
+        "qwen/qwen3.5-397b-a17b": {
+          "name": "qwen/qwen3.5-397b-a17b"
         }
       }
     }
