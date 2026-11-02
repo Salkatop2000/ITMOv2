@@ -1,23 +1,55 @@
 {
   "$schema": "https://opencode.ai/config.json",
+
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama Local",
+      "options": {
+        "baseURL": "http://127.0.0.1:11434/v1"
+      },
+      "models": {
+        "qwen-practice_06_01": {
+          "name": "Qwen 3.5 4b",
+          "limit": {
+            "context": 4096,
+            "output": 1024
+          }
+        }
+      }
+    }
+  },
+
+  "model": "ollama/itmo-planner:latest",
+  "small_model": "ollama/itmo-planner:latest",
+
   "agent": {
-    "threat-judge": {
-      "description": "Independent reviewer of the submitted threat model",
+    "shop-planner": {
+      "description": "Shop assistant without thinking",
       "mode": "primary",
+      "model": "ollama/qwen-practice_06_01",
+      "prompt": "{file:./planner-system.txt}",
+      "steps": 4,
+      "permission": {
+        "*": "deny",
+        "bash": {
+          "*": "deny",
+          "curl *http://127.0.0.1:*/assistant/execute*": "allow"
+        }
+      },
+      "reasoning_effort": "none"
+    },
+
+    "threat-judge": {
+      "description": "Security reviewer with thinking",
+      "mode": "primary",
+      "model": "ollama/qwen-practice_06_01",
       "prompt": "{file:./judge-system-prompt.md}",
       "steps": 8,
       "permission": {
-        "*": "deny",
-        "read": {
-          "*": "deny",
-        }
-      }
-    },
-    "shop-planner": {
-      "description": "Model under test: produces a shop action without executing tools",
-      "mode": "primary",
-      "prompt": "{file:./planner-system.txt}",
-      "permission": { "*": "deny" }
+        "*": "deny"
+      },
+      "reasoning_effort": "high"
     }
   }
 }
