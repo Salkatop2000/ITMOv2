@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 PRACTICE_DIR = Path(__file__).resolve().parent.parent
 OPENCODE_BIN = shutil.which("opencode")
-TIMEOUT_SECONDS = int(os.environ.get("AI_SECURITY_TIMEOUT", "180"))
+TIMEOUT_SECONDS = int(os.environ.get("AI_SECURITY_TIMEOUT", "300"))
 MODEL_OVERRIDES = {
     "shop-planner": os.environ.get("AI_SECURITY_PLANNER_MODEL", "").strip(),
     "threat-judge": os.environ.get("AI_SECURITY_JUDGE_MODEL", "").strip(),

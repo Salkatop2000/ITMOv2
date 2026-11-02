@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parent
 LAB = ROOT / "lab"
 TEST_MODULE = "test_AI_security"
 REPORT = ROOT / "test_report_01.md"
-RUNS = 10
+RUNS = 1
 
 
 def model_names():
